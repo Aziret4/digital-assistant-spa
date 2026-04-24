@@ -12,6 +12,7 @@ import {
   Legend,
 } from 'recharts';
 import api from '../api/axios';
+import { useI18n } from '../context/I18nContext';
 
 const REQUEST_STATUS_COLORS = {
   'новая': '#3b82f6',
@@ -29,33 +30,37 @@ const ORDER_STATUS_COLORS = {
   'отменен': '#9ca3af',
 };
 
-function countByStatus(items, colorsMap) {
+function countByStatus(items, colorsMap, translate) {
   const counts = {};
   for (const item of items) {
     const s = item.status;
     counts[s] = (counts[s] || 0) + 1;
   }
   return Object.entries(counts).map(([name, value]) => ({
-    name,
+    name: translate(name),
+    rawName: name,
     value,
     color: colorsMap[name] || '#9ca3af',
   }));
 }
 
-function sumByOrderStatus(orders) {
+function sumByOrderStatus(orders, translate) {
   const sums = {};
   for (const o of orders) {
     const s = o.status;
     sums[s] = (sums[s] || 0) + Number(o.amount || 0);
   }
   return Object.entries(sums).map(([name, value]) => ({
-    name,
+    name: translate(name),
+    rawName: name,
     value: Math.round(value),
     color: ORDER_STATUS_COLORS[name] || '#9ca3af',
   }));
 }
 
 export default function Dashboard() {
+  const { t } = useI18n();
+
   const [stats, setStats] = useState({
     clients: 0,
     requestsTotal: 0,
@@ -91,20 +96,21 @@ export default function Dashboard() {
           ordersInWork: orders.filter((o) => o.status === 'в работе').length,
         });
 
-        setRequestsChart(countByStatus(requests, REQUEST_STATUS_COLORS));
-        setOrdersChart(countByStatus(orders, ORDER_STATUS_COLORS));
-        setAmountChart(sumByOrderStatus(orders));
+        setRequestsChart(countByStatus(requests, REQUEST_STATUS_COLORS, (s) => t(`requestStatus.${s}`)));
+        setOrdersChart(countByStatus(orders, ORDER_STATUS_COLORS, (s) => t(`orderStatus.${s}`)));
+        setAmountChart(sumByOrderStatus(orders, (s) => t(`orderStatus.${s}`)));
       } catch (err) {
-        setError(err.response?.data?.message || 'Ошибка загрузки статистики');
+        setError(err.response?.data?.message || t('dashboard.error'));
       } finally {
         setLoading(false);
       }
     }
 
     loadData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [t]);
 
-  if (loading) return <div className="page"><p>Загрузка...</p></div>;
+  if (loading) return <div className="page"><p>{t('common.loading')}</p></div>;
   if (error) return <div className="page"><div className="error">{error}</div></div>;
 
   const hasRequests = requestsChart.length > 0;
@@ -113,31 +119,31 @@ export default function Dashboard() {
   return (
     <div className="page">
       <div className="page-header">
-        <h1>Панель управления</h1>
+        <h1>{t('dashboard.title')}</h1>
       </div>
 
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-label">Клиенты</div>
+          <div className="stat-label">{t('dashboard.clients')}</div>
           <div className="stat-value">{stats.clients}</div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-label">Заявки</div>
+          <div className="stat-label">{t('dashboard.requests')}</div>
           <div className="stat-value">{stats.requestsTotal}</div>
-          <div className="stat-sub">активных: {stats.requestsActive}</div>
+          <div className="stat-sub">{t('dashboard.active')}: {stats.requestsActive}</div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-label">Заказы</div>
+          <div className="stat-label">{t('dashboard.orders')}</div>
           <div className="stat-value">{stats.ordersTotal}</div>
-          <div className="stat-sub">в работе: {stats.ordersInWork}</div>
+          <div className="stat-sub">{t('dashboard.inWork')}: {stats.ordersInWork}</div>
         </div>
       </div>
 
       <div className="charts-grid">
         <div className="chart-card">
-          <h2>Заявки по статусам</h2>
+          <h2>{t('dashboard.chart.requestsByStatus')}</h2>
           {hasRequests ? (
             <ResponsiveContainer width="100%" height={260}>
               <PieChart>
@@ -159,12 +165,12 @@ export default function Dashboard() {
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <p className="muted">Нет данных</p>
+            <p className="muted">{t('common.noData')}</p>
           )}
         </div>
 
         <div className="chart-card">
-          <h2>Заказы по статусам</h2>
+          <h2>{t('dashboard.chart.ordersByStatus')}</h2>
           {hasOrders ? (
             <ResponsiveContainer width="100%" height={260}>
               <PieChart>
@@ -186,19 +192,19 @@ export default function Dashboard() {
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <p className="muted">Нет данных</p>
+            <p className="muted">{t('common.noData')}</p>
           )}
         </div>
       </div>
 
       <div className="chart-card wide">
-        <h2>Суммы заказов по статусам (сом)</h2>
+        <h2>{t('dashboard.chart.amountByStatus')}</h2>
         {hasOrders ? (
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={amountChart} margin={{ top: 16, right: 16, left: 0, bottom: 0 }}>
               <XAxis dataKey="name" stroke="#737373" fontSize={12} />
               <YAxis stroke="#737373" fontSize={12} />
-              <Tooltip formatter={(value) => `${Number(value).toLocaleString('ru-RU')} сом`} />
+              <Tooltip formatter={(value) => `${Number(value).toLocaleString('ru-RU')}`} />
               <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                 {amountChart.map((entry, i) => (
                   <Cell key={i} fill={entry.color} />
@@ -207,7 +213,7 @@ export default function Dashboard() {
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <p className="muted">Нет данных</p>
+          <p className="muted">{t('common.noData')}</p>
         )}
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
+import { useI18n } from '../context/I18nContext';
 import EmptyState from '../components/EmptyState';
 import {
   IconPlus,
@@ -11,15 +12,6 @@ import {
   IconArrowRight,
   IconClipboard,
 } from '../components/Icons';
-
-const SERVICE_TYPES = [
-  { value: '', label: '— не указано —' },
-  { value: 'подшив', label: 'Подшив' },
-  { value: 'ремонт', label: 'Ремонт одежды' },
-  { value: 'замена молнии', label: 'Замена молнии' },
-  { value: 'пошив', label: 'Пошив' },
-  { value: 'другое', label: 'Другое' },
-];
 
 const STATUSES = [
   'новая',
@@ -64,6 +56,16 @@ function formatDate(iso) {
 
 export default function Requests() {
   const toast = useToast();
+  const { t } = useI18n();
+
+  const SERVICE_TYPES = [
+    { value: '', label: t('common.notSpecified') },
+    { value: 'подшив', label: t('service.hemming') },
+    { value: 'ремонт', label: t('service.repair') },
+    { value: 'замена молнии', label: t('service.zipper') },
+    { value: 'пошив', label: t('service.sewing') },
+    { value: 'другое', label: t('service.other') },
+  ];
 
   const [requests, setRequests] = useState([]);
   const [clients, setClients] = useState([]);
@@ -91,7 +93,7 @@ export default function Requests() {
       setRequests(reqRes.data);
       setClients(clientsRes.data);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Ошибка загрузки данных');
+      toast.error(err.response?.data?.message || t('requests.loadError'));
     } finally {
       setLoading(false);
     }
@@ -99,6 +101,7 @@ export default function Requests() {
 
   useEffect(() => {
     loadAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filteredRequests = useMemo(() => {
@@ -171,15 +174,15 @@ export default function Requests() {
       };
       if (editingId) {
         await api.put(`/requests/${editingId}`, payload);
-        toast.success('Заявка обновлена');
+        toast.success(t('requests.updated'));
       } else {
         await api.post('/requests', payload);
-        toast.success('Заявка создана');
+        toast.success(t('requests.created'));
       }
       closeForm();
       await loadAll();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Ошибка сохранения');
+      toast.error(err.response?.data?.message || t('clients.saveError'));
     } finally {
       setSaving(false);
     }
@@ -196,24 +199,24 @@ export default function Requests() {
         comment: convertForm.comment || null,
       };
       await api.post(`/requests/${convertId}/convert`, payload);
-      toast.success('Заявка переведена в заказ');
+      toast.success(t('requests.converted'));
       closeConvert();
       await loadAll();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Ошибка перевода в заказ');
+      toast.error(err.response?.data?.message || t('requests.convertError'));
     } finally {
       setConverting(false);
     }
   }
 
   async function handleDelete(id) {
-    if (!window.confirm('Удалить заявку?')) return;
+    if (!window.confirm(t('requests.deleteConfirm'))) return;
     try {
       await api.delete(`/requests/${id}`);
-      toast.success('Заявка удалена');
+      toast.success(t('requests.deleted'));
       await loadAll();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Ошибка удаления');
+      toast.error(err.response?.data?.message || t('clients.deleteError'));
     }
   }
 
@@ -224,28 +227,28 @@ export default function Requests() {
   return (
     <div className="page">
       <div className="page-header">
-        <h1>Заявки</h1>
+        <h1>{t('requests.title')}</h1>
         {!showForm && !convertId && (
           <button onClick={startAdd}>
-            <IconPlus /> Добавить заявку
+            <IconPlus /> {t('requests.add').replace('+ ', '')}
           </button>
         )}
       </div>
 
       {showForm && (
         <form className="card form" onSubmit={handleSubmit}>
-          <h2>{editingId ? 'Редактировать заявку' : 'Новая заявка'}</h2>
+          <h2>{editingId ? t('requests.edit') : t('requests.new')}</h2>
 
           <div className="form-grid">
             <label>
-              Клиент *
+              {t('requests.client')} *
               <select
                 name="client_id"
                 value={form.client_id}
                 onChange={handleChange}
                 required
               >
-                <option value="">— выберите клиента —</option>
+                <option value="">{t('common.selectClient')}</option>
                 {clients.map((c) => (
                   <option key={c.id} value={c.id}>{c.full_name}</option>
                 ))}
@@ -253,7 +256,7 @@ export default function Requests() {
             </label>
 
             <label>
-              Тип услуги
+              {t('requests.serviceType')}
               <select name="service_type" value={form.service_type} onChange={handleChange}>
                 {SERVICE_TYPES.map((s) => (
                   <option key={s.value} value={s.value}>{s.label}</option>
@@ -262,7 +265,7 @@ export default function Requests() {
             </label>
 
             <label>
-              Название *
+              {t('requests.name')} *
               <input
                 name="title"
                 value={form.title}
@@ -272,17 +275,17 @@ export default function Requests() {
             </label>
 
             <label>
-              Статус
+              {t('requests.status')}
               <select name="status" value={form.status} onChange={handleChange}>
                 {EDITABLE_STATUSES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                  <option key={s} value={s}>{t(`requestStatus.${s}`)}</option>
                 ))}
               </select>
             </label>
           </div>
 
           <label>
-            Описание
+            {t('requests.description')}
             <textarea
               name="description"
               value={form.description}
@@ -293,10 +296,10 @@ export default function Requests() {
 
           <div className="form-actions">
             <button type="submit" disabled={saving}>
-              <IconCheck /> {saving ? 'Сохранение...' : 'Сохранить'}
+              <IconCheck /> {saving ? t('common.saving') : t('common.save')}
             </button>
             <button type="button" className="secondary" onClick={closeForm}>
-              <IconX /> Отмена
+              <IconX /> {t('common.cancel')}
             </button>
           </div>
         </form>
@@ -304,11 +307,11 @@ export default function Requests() {
 
       {convertId && (
         <form className="card form" onSubmit={handleConvertSubmit}>
-          <h2>Перевести заявку в заказ</h2>
+          <h2>{t('requests.convertTitle')}</h2>
 
           <div className="form-grid">
             <label>
-              Название услуги *
+              {t('orders.serviceName')} *
               <input
                 name="service_name"
                 value={convertForm.service_name}
@@ -318,7 +321,7 @@ export default function Requests() {
             </label>
 
             <label>
-              Сумма
+              {t('orders.amount')}
               <input
                 name="amount"
                 type="number"
@@ -331,7 +334,7 @@ export default function Requests() {
             </label>
 
             <label>
-              Срок
+              {t('orders.deadline')}
               <input
                 name="deadline"
                 type="date"
@@ -342,7 +345,7 @@ export default function Requests() {
           </div>
 
           <label>
-            Комментарий
+            {t('orders.comment')}
             <textarea
               name="comment"
               value={convertForm.comment}
@@ -353,10 +356,10 @@ export default function Requests() {
 
           <div className="form-actions">
             <button type="submit" disabled={converting}>
-              <IconCheck /> {converting ? 'Создание...' : 'Создать заказ'}
+              <IconCheck /> {converting ? t('requests.converting') : t('requests.convertAction')}
             </button>
             <button type="button" className="secondary" onClick={closeConvert}>
-              <IconX /> Отмена
+              <IconX /> {t('common.cancel')}
             </button>
           </div>
         </form>
@@ -366,48 +369,48 @@ export default function Requests() {
         <div className="filter-bar">
           <input
             type="search"
-            placeholder="Поиск по названию, описанию, клиенту..."
+            placeholder={t('requests.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="">Все статусы</option>
+            <option value="">{t('common.allStatuses')}</option>
             {STATUSES.map((s) => (
-              <option key={s} value={s}>{s}</option>
+              <option key={s} value={s}>{t(`requestStatus.${s}`)}</option>
             ))}
           </select>
           <span className="filter-count">
-            Показано {filteredRequests.length} из {requests.length}
+            {t('common.showing')} {filteredRequests.length} {t('common.of')} {requests.length}
           </span>
         </div>
       )}
 
       {loading ? (
-        <div className="card"><p>Загрузка...</p></div>
+        <div className="card"><p>{t('common.loading')}</p></div>
       ) : requests.length === 0 ? (
         <EmptyState
           icon={IconClipboard}
-          title="Заявок пока нет"
-          description="Создайте первую заявку от клиента"
+          title={t('requests.empty.title')}
+          description={t('requests.empty.description')}
           action={
             <button onClick={startAdd}>
-              <IconPlus /> Добавить заявку
+              <IconPlus /> {t('requests.add').replace('+ ', '')}
             </button>
           }
         />
       ) : filteredRequests.length === 0 ? (
-        <EmptyState title="Ничего не найдено" description="Попробуйте изменить запрос или фильтр" />
+        <EmptyState title={t('common.notFound')} description={t('common.notFoundHint')} />
       ) : (
         <div className="card">
           <table className="data-table">
             <thead>
               <tr>
-                <th>Клиент</th>
-                <th>Название</th>
-                <th>Тип услуги</th>
-                <th>Статус</th>
-                <th>Дата</th>
-                <th className="col-actions">Действия</th>
+                <th>{t('requests.client')}</th>
+                <th>{t('requests.name')}</th>
+                <th>{t('requests.serviceType')}</th>
+                <th>{t('requests.status')}</th>
+                <th>{t('requests.date')}</th>
+                <th className="col-actions">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -416,19 +419,19 @@ export default function Requests() {
                   <td>{r.client_name || '—'}</td>
                   <td>{r.title}</td>
                   <td>{r.service_type || '—'}</td>
-                  <td><span className={statusClass(r.status)}>{r.status}</span></td>
+                  <td><span className={statusClass(r.status)}>{t(`requestStatus.${r.status}`)}</span></td>
                   <td>{formatDate(r.created_at)}</td>
                   <td className="col-actions">
                     <button className="secondary small" onClick={() => startEdit(r)}>
-                      <IconEdit width={14} height={14} /> Изменить
+                      <IconEdit width={14} height={14} /> {t('common.edit')}
                     </button>
                     {canConvert(r.status) && (
                       <button className="small" onClick={() => startConvert(r)}>
-                        <IconArrowRight width={14} height={14} /> В заказ
+                        <IconArrowRight width={14} height={14} /> {t('requests.toOrder')}
                       </button>
                     )}
                     <button className="danger small" onClick={() => handleDelete(r.id)}>
-                      <IconTrash width={14} height={14} /> Удалить
+                      <IconTrash width={14} height={14} /> {t('common.delete')}
                     </button>
                   </td>
                 </tr>

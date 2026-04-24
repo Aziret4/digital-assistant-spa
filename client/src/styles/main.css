@@ -380,6 +380,43 @@ button.small {
   opacity: 1;
 }
 
+.lang-switcher {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--color-sidebar-hover);
+  border-radius: 8px;
+}
+
+.lang-btn {
+  flex: 1;
+  background: transparent;
+  color: var(--color-sidebar-text);
+  border: none;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.15s;
+  cursor: pointer;
+}
+
+.lang-btn:hover {
+  color: var(--color-text);
+  background: transparent;
+  border: none;
+}
+
+.lang-btn-active {
+  background: var(--color-card);
+  color: var(--color-text);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.lang-btn-active:hover {
+  background: var(--color-card);
+}
+
 .theme-toggle {
   display: flex;
   align-items: center;

@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useI18n } from '../context/I18nContext';
 
 export default function Login() {
   const { login } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
@@ -19,7 +21,7 @@ export default function Login() {
       await login(email, password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.message || 'Ошибка входа');
+      setError(err.response?.data?.message || t('auth.login.error'));
     } finally {
       setLoading(false);
     }
@@ -31,13 +33,13 @@ export default function Login() {
         <div className="auth-brand">
           <div className="brand-logo">ЦП</div>
           <div>
-            <h1>Вход в систему</h1>
-            <p className="muted">Цифровой помощник для ателье</p>
+            <h1>{t('auth.login.title')}</h1>
+            <p className="muted">{t('auth.login.subtitle')}</p>
           </div>
         </div>
 
         <label>
-          Email
+          {t('auth.login.email')}
           <input
             type="email"
             value={email}
@@ -48,7 +50,7 @@ export default function Login() {
         </label>
 
         <label>
-          Пароль
+          {t('auth.login.password')}
           <input
             type="password"
             value={password}
@@ -60,11 +62,11 @@ export default function Login() {
         {error && <div className="error">{error}</div>}
 
         <button type="submit" disabled={loading} className="full-width">
-          {loading ? 'Входим...' : 'Войти'}
+          {loading ? t('auth.login.submitting') : t('auth.login.submit')}
         </button>
 
         <div className="auth-switch">
-          Нет аккаунта? <Link to="/register">Зарегистрироваться</Link>
+          {t('auth.login.noAccount')} <Link to="/register">{t('auth.login.register')}</Link>
         </div>
       </form>
     </div>

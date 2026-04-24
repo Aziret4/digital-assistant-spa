@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
+import { useI18n } from '../context/I18nContext';
 import EmptyState from '../components/EmptyState';
 import {
   IconPlus,
@@ -42,7 +43,7 @@ function formatAmount(value) {
   if (value === null || value === undefined || value === '') return '—';
   const num = Number(value);
   if (Number.isNaN(num)) return '—';
-  return num.toLocaleString('ru-RU') + ' сом';
+  return num.toLocaleString('ru-RU');
 }
 
 function toDateInputValue(iso) {
@@ -57,6 +58,7 @@ function toDateInputValue(iso) {
 
 export default function Orders() {
   const toast = useToast();
+  const { t } = useI18n();
 
   const [orders, setOrders] = useState([]);
   const [clients, setClients] = useState([]);
@@ -80,7 +82,7 @@ export default function Orders() {
       setOrders(ordersRes.data);
       setClients(clientsRes.data);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Ошибка загрузки данных');
+      toast.error(err.response?.data?.message || t('requests.loadError'));
     } finally {
       setLoading(false);
     }
@@ -88,6 +90,7 @@ export default function Orders() {
 
   useEffect(() => {
     loadAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filteredOrders = useMemo(() => {
@@ -141,56 +144,56 @@ export default function Orders() {
       };
       if (editingId) {
         await api.put(`/orders/${editingId}`, payload);
-        toast.success('Заказ обновлён');
+        toast.success(t('orders.updated'));
       } else {
         await api.post('/orders', payload);
-        toast.success('Заказ создан');
+        toast.success(t('orders.created'));
       }
       closeForm();
       await loadAll();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Ошибка сохранения');
+      toast.error(err.response?.data?.message || t('clients.saveError'));
     } finally {
       setSaving(false);
     }
   }
 
   async function handleDelete(id) {
-    if (!window.confirm('Удалить заказ?')) return;
+    if (!window.confirm(t('orders.deleteConfirm'))) return;
     try {
       await api.delete(`/orders/${id}`);
-      toast.success('Заказ удалён');
+      toast.success(t('orders.deleted'));
       await loadAll();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Ошибка удаления');
+      toast.error(err.response?.data?.message || t('clients.deleteError'));
     }
   }
 
   return (
     <div className="page">
       <div className="page-header">
-        <h1>Заказы</h1>
+        <h1>{t('orders.title')}</h1>
         {!showForm && (
           <button onClick={startAdd}>
-            <IconPlus /> Добавить заказ
+            <IconPlus /> {t('orders.add').replace('+ ', '')}
           </button>
         )}
       </div>
 
       {showForm && (
         <form className="card form" onSubmit={handleSubmit}>
-          <h2>{editingId ? 'Редактировать заказ' : 'Новый заказ'}</h2>
+          <h2>{editingId ? t('orders.edit') : t('orders.new')}</h2>
 
           <div className="form-grid">
             <label>
-              Клиент *
+              {t('requests.client')} *
               <select
                 name="client_id"
                 value={form.client_id}
                 onChange={handleChange}
                 required
               >
-                <option value="">— выберите клиента —</option>
+                <option value="">{t('common.selectClient')}</option>
                 {clients.map((c) => (
                   <option key={c.id} value={c.id}>{c.full_name}</option>
                 ))}
@@ -198,7 +201,7 @@ export default function Orders() {
             </label>
 
             <label>
-              Название услуги *
+              {t('orders.serviceName')} *
               <input
                 name="service_name"
                 value={form.service_name}
@@ -208,7 +211,7 @@ export default function Orders() {
             </label>
 
             <label>
-              Сумма (сом)
+              {t('orders.amountLabel')}
               <input
                 name="amount"
                 type="number"
@@ -221,7 +224,7 @@ export default function Orders() {
             </label>
 
             <label>
-              Срок
+              {t('orders.deadline')}
               <input
                 name="deadline"
                 type="date"
@@ -231,17 +234,17 @@ export default function Orders() {
             </label>
 
             <label>
-              Статус
+              {t('orders.status')}
               <select name="status" value={form.status} onChange={handleChange}>
                 {STATUSES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                  <option key={s} value={s}>{t(`orderStatus.${s}`)}</option>
                 ))}
               </select>
             </label>
           </div>
 
           <label>
-            Комментарий
+            {t('orders.comment')}
             <textarea
               name="comment"
               value={form.comment}
@@ -252,10 +255,10 @@ export default function Orders() {
 
           <div className="form-actions">
             <button type="submit" disabled={saving}>
-              <IconCheck /> {saving ? 'Сохранение...' : 'Сохранить'}
+              <IconCheck /> {saving ? t('common.saving') : t('common.save')}
             </button>
             <button type="button" className="secondary" onClick={closeForm}>
-              <IconX /> Отмена
+              <IconX /> {t('common.cancel')}
             </button>
           </div>
         </form>
@@ -265,49 +268,49 @@ export default function Orders() {
         <div className="filter-bar">
           <input
             type="search"
-            placeholder="Поиск по услуге, клиенту, комментарию..."
+            placeholder={t('orders.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="">Все статусы</option>
+            <option value="">{t('common.allStatuses')}</option>
             {STATUSES.map((s) => (
-              <option key={s} value={s}>{s}</option>
+              <option key={s} value={s}>{t(`orderStatus.${s}`)}</option>
             ))}
           </select>
           <span className="filter-count">
-            Показано {filteredOrders.length} из {orders.length}
+            {t('common.showing')} {filteredOrders.length} {t('common.of')} {orders.length}
           </span>
         </div>
       )}
 
       {loading ? (
-        <div className="card"><p>Загрузка...</p></div>
+        <div className="card"><p>{t('common.loading')}</p></div>
       ) : orders.length === 0 ? (
         <EmptyState
           icon={IconBag}
-          title="Заказов пока нет"
-          description="Создайте заказ или переведите заявку в заказ"
+          title={t('orders.empty.title')}
+          description={t('orders.empty.description')}
           action={
             <button onClick={startAdd}>
-              <IconPlus /> Добавить заказ
+              <IconPlus /> {t('orders.add').replace('+ ', '')}
             </button>
           }
         />
       ) : filteredOrders.length === 0 ? (
-        <EmptyState title="Ничего не найдено" description="Попробуйте изменить запрос или фильтр" />
+        <EmptyState title={t('common.notFound')} description={t('common.notFoundHint')} />
       ) : (
         <div className="card">
           <table className="data-table">
             <thead>
               <tr>
-                <th>Клиент</th>
-                <th>Услуга</th>
-                <th>Сумма</th>
-                <th>Срок</th>
-                <th>Статус</th>
-                <th>Создан</th>
-                <th className="col-actions">Действия</th>
+                <th>{t('requests.client')}</th>
+                <th>{t('orders.service')}</th>
+                <th>{t('orders.amount')}</th>
+                <th>{t('orders.deadline')}</th>
+                <th>{t('orders.status')}</th>
+                <th>{t('orders.createdAt')}</th>
+                <th className="col-actions">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -317,14 +320,14 @@ export default function Orders() {
                   <td>{o.service_name}</td>
                   <td>{formatAmount(o.amount)}</td>
                   <td>{formatDate(o.deadline)}</td>
-                  <td><span className={statusClass(o.status)}>{o.status}</span></td>
+                  <td><span className={statusClass(o.status)}>{t(`orderStatus.${o.status}`)}</span></td>
                   <td>{formatDate(o.created_at)}</td>
                   <td className="col-actions">
                     <button className="secondary small" onClick={() => startEdit(o)}>
-                      <IconEdit width={14} height={14} /> Изменить
+                      <IconEdit width={14} height={14} /> {t('common.edit')}
                     </button>
                     <button className="danger small" onClick={() => handleDelete(o.id)}>
-                      <IconTrash width={14} height={14} /> Удалить
+                      <IconTrash width={14} height={14} /> {t('common.delete')}
                     </button>
                   </td>
                 </tr>

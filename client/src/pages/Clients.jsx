@@ -1,18 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
+import { useI18n } from '../context/I18nContext';
 import EmptyState from '../components/EmptyState';
 import { IconPlus, IconEdit, IconTrash, IconCheck, IconX, IconUsers } from '../components/Icons';
-
-const SOURCES = [
-  { value: '', label: '— не указано —' },
-  { value: 'whatsapp', label: 'WhatsApp' },
-  { value: 'instagram', label: 'Instagram' },
-  { value: 'telegram', label: 'Telegram' },
-  { value: 'phone', label: 'Телефон' },
-  { value: 'website', label: 'Сайт' },
-  { value: 'другое', label: 'Другое' },
-];
 
 const EMPTY_FORM = {
   full_name: '',
@@ -24,6 +15,17 @@ const EMPTY_FORM = {
 
 export default function Clients() {
   const toast = useToast();
+  const { t } = useI18n();
+
+  const SOURCES = [
+    { value: '', label: t('common.notSpecified') },
+    { value: 'whatsapp', label: t('source.whatsapp') },
+    { value: 'instagram', label: t('source.instagram') },
+    { value: 'telegram', label: t('source.telegram') },
+    { value: 'phone', label: t('source.phone') },
+    { value: 'website', label: t('source.website') },
+    { value: 'другое', label: t('source.other') },
+  ];
 
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +43,7 @@ export default function Clients() {
       const { data } = await api.get('/clients');
       setClients(data);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Ошибка загрузки клиентов');
+      toast.error(err.response?.data?.message || t('clients.loadError'));
     } finally {
       setLoading(false);
     }
@@ -49,6 +51,7 @@ export default function Clients() {
 
   useEffect(() => {
     loadClients();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filteredClients = useMemo(() => {
@@ -94,49 +97,55 @@ export default function Clients() {
     try {
       if (editingId) {
         await api.put(`/clients/${editingId}`, form);
-        toast.success('Клиент обновлён');
+        toast.success(t('clients.updated'));
       } else {
         await api.post('/clients', form);
-        toast.success('Клиент добавлен');
+        toast.success(t('clients.added'));
       }
       cancelForm();
       await loadClients();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Ошибка сохранения');
+      toast.error(err.response?.data?.message || t('clients.saveError'));
     } finally {
       setSaving(false);
     }
   }
 
   async function handleDelete(id) {
-    if (!window.confirm('Удалить клиента?')) return;
+    if (!window.confirm(t('clients.deleteConfirm'))) return;
     try {
       await api.delete(`/clients/${id}`);
-      toast.success('Клиент удалён');
+      toast.success(t('clients.deleted'));
       await loadClients();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Ошибка удаления');
+      toast.error(err.response?.data?.message || t('clients.deleteError'));
     }
+  }
+
+  function sourceLabel(value) {
+    if (!value) return '—';
+    const item = SOURCES.find((s) => s.value === value);
+    return item ? item.label : value;
   }
 
   return (
     <div className="page">
       <div className="page-header">
-        <h1>Клиенты</h1>
+        <h1>{t('clients.title')}</h1>
         {!showForm && (
           <button onClick={startAdd}>
-            <IconPlus /> Добавить клиента
+            <IconPlus /> {t('clients.add').replace('+ ', '')}
           </button>
         )}
       </div>
 
       {showForm && (
         <form className="card form" onSubmit={handleSubmit}>
-          <h2>{editingId ? 'Редактировать клиента' : 'Новый клиент'}</h2>
+          <h2>{editingId ? t('clients.edit') : t('clients.new')}</h2>
 
           <div className="form-grid">
             <label>
-              ФИО *
+              {t('clients.fullName')} *
               <input
                 name="full_name"
                 value={form.full_name}
@@ -146,7 +155,7 @@ export default function Clients() {
             </label>
 
             <label>
-              Телефон
+              {t('clients.phone')}
               <input
                 name="phone"
                 value={form.phone}
@@ -156,7 +165,7 @@ export default function Clients() {
             </label>
 
             <label>
-              Email
+              {t('clients.email')}
               <input
                 name="email"
                 type="email"
@@ -166,7 +175,7 @@ export default function Clients() {
             </label>
 
             <label>
-              Источник
+              {t('clients.source')}
               <select name="source" value={form.source} onChange={handleChange}>
                 {SOURCES.map((s) => (
                   <option key={s.value} value={s.value}>{s.label}</option>
@@ -176,7 +185,7 @@ export default function Clients() {
           </div>
 
           <label>
-            Заметки
+            {t('clients.notes')}
             <textarea
               name="notes"
               value={form.notes}
@@ -187,10 +196,10 @@ export default function Clients() {
 
           <div className="form-actions">
             <button type="submit" disabled={saving}>
-              <IconCheck /> {saving ? 'Сохранение...' : 'Сохранить'}
+              <IconCheck /> {saving ? t('common.saving') : t('common.save')}
             </button>
             <button type="button" className="secondary" onClick={cancelForm}>
-              <IconX /> Отмена
+              <IconX /> {t('common.cancel')}
             </button>
           </div>
         </form>
@@ -200,42 +209,42 @@ export default function Clients() {
         <div className="filter-bar">
           <input
             type="search"
-            placeholder="Поиск по имени, телефону, email, заметкам..."
+            placeholder={t('clients.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           <span className="filter-count">
-            Показано {filteredClients.length} из {clients.length}
+            {t('common.showing')} {filteredClients.length} {t('common.of')} {clients.length}
           </span>
         </div>
       )}
 
       {loading ? (
-        <div className="card"><p>Загрузка...</p></div>
+        <div className="card"><p>{t('common.loading')}</p></div>
       ) : clients.length === 0 ? (
         <EmptyState
           icon={IconUsers}
-          title="Клиентов пока нет"
-          description="Добавьте первого клиента, чтобы начать работу"
+          title={t('clients.empty.title')}
+          description={t('clients.empty.description')}
           action={
             <button onClick={startAdd}>
-              <IconPlus /> Добавить клиента
+              <IconPlus /> {t('clients.add').replace('+ ', '')}
             </button>
           }
         />
       ) : filteredClients.length === 0 ? (
-        <EmptyState title="Ничего не найдено" description="Попробуйте изменить запрос" />
+        <EmptyState title={t('common.notFound')} description={t('common.notFoundHint')} />
       ) : (
         <div className="card">
           <table className="data-table">
             <thead>
               <tr>
-                <th>ФИО</th>
-                <th>Телефон</th>
-                <th>Email</th>
-                <th>Источник</th>
-                <th>Заметки</th>
-                <th className="col-actions">Действия</th>
+                <th>{t('clients.fullName')}</th>
+                <th>{t('clients.phone')}</th>
+                <th>{t('clients.email')}</th>
+                <th>{t('clients.source')}</th>
+                <th>{t('clients.notes')}</th>
+                <th className="col-actions">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -244,14 +253,14 @@ export default function Clients() {
                   <td>{c.full_name}</td>
                   <td>{c.phone || '—'}</td>
                   <td>{c.email || '—'}</td>
-                  <td>{c.source || '—'}</td>
+                  <td>{sourceLabel(c.source)}</td>
                   <td className="notes-cell">{c.notes || '—'}</td>
                   <td className="col-actions">
                     <button className="secondary small" onClick={() => startEdit(c)}>
-                      <IconEdit width={14} height={14} /> Изменить
+                      <IconEdit width={14} height={14} /> {t('common.edit')}
                     </button>
                     <button className="danger small" onClick={() => handleDelete(c.id)}>
-                      <IconTrash width={14} height={14} /> Удалить
+                      <IconTrash width={14} height={14} /> {t('common.delete')}
                     </button>
                   </td>
                 </tr>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useI18n, LANGUAGES } from '../context/I18nContext';
 import {
   IconHome,
   IconUsers,
@@ -26,6 +27,7 @@ function getInitials(name) {
 export default function Layout() {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { t, lang, setLang } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -46,15 +48,15 @@ export default function Layout() {
         <button
           className="icon-btn"
           onClick={() => setSidebarOpen(true)}
-          aria-label="Открыть меню"
+          aria-label="Menu"
         >
           <IconMenu width={22} height={22} />
         </button>
-        <div className="mobile-brand">Цифровой помощник</div>
+        <div className="mobile-brand">{t('brand.title')}</div>
         <button
           className="icon-btn"
           onClick={toggleTheme}
-          aria-label="Переключить тему"
+          aria-label="Theme"
           style={{ marginLeft: 'auto' }}
         >
           {theme === 'light' ? <IconMoon width={18} height={18} /> : <IconSun width={18} height={18} />}
@@ -72,13 +74,13 @@ export default function Layout() {
         <div className="sidebar-brand">
           <div className="brand-logo">ЦП</div>
           <div className="brand-text">
-            <div className="brand-title">Цифровой помощник</div>
-            <div className="brand-subtitle">Ателье</div>
+            <div className="brand-title">{t('brand.title')}</div>
+            <div className="brand-subtitle">{t('brand.subtitle')}</div>
           </div>
           <button
             className="icon-btn sidebar-close"
             onClick={() => setSidebarOpen(false)}
-            aria-label="Закрыть меню"
+            aria-label="Close"
           >
             <IconX width={18} height={18} />
           </button>
@@ -86,30 +88,42 @@ export default function Layout() {
 
         <nav className="sidebar-nav">
           <NavLink to="/dashboard" end>
-            <IconHome /> <span>Главная</span>
+            <IconHome /> <span>{t('nav.home')}</span>
           </NavLink>
           <NavLink to="/clients">
-            <IconUsers /> <span>Клиенты</span>
+            <IconUsers /> <span>{t('nav.clients')}</span>
           </NavLink>
           <NavLink to="/requests">
-            <IconClipboard /> <span>Заявки</span>
+            <IconClipboard /> <span>{t('nav.requests')}</span>
           </NavLink>
           <NavLink to="/orders">
-            <IconBag /> <span>Заказы</span>
+            <IconBag /> <span>{t('nav.orders')}</span>
           </NavLink>
           <NavLink to="/assistant">
-            <IconChat /> <span>Помощник</span>
+            <IconChat /> <span>{t('nav.assistant')}</span>
           </NavLink>
         </nav>
+
+        <div className="lang-switcher">
+          {LANGUAGES.map((l) => (
+            <button
+              key={l.code}
+              className={`lang-btn ${lang === l.code ? 'lang-btn-active' : ''}`}
+              onClick={() => setLang(l.code)}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
 
         <button className="theme-toggle" onClick={toggleTheme}>
           {theme === 'light' ? (
             <>
-              <IconMoon width={16} height={16} /> <span>Тёмная тема</span>
+              <IconMoon width={16} height={16} /> <span>{t('theme.dark')}</span>
             </>
           ) : (
             <>
-              <IconSun width={16} height={16} /> <span>Светлая тема</span>
+              <IconSun width={16} height={16} /> <span>{t('theme.light')}</span>
             </>
           )}
         </button>
@@ -117,10 +131,10 @@ export default function Layout() {
         <div className="sidebar-user">
           <div className="avatar">{getInitials(user?.name)}</div>
           <div className="user-info">
-            <div className="user-name">{user?.name || 'Пользователь'}</div>
+            <div className="user-name">{user?.name || t('common.user')}</div>
             <div className="user-email">{user?.email}</div>
           </div>
-          <button className="logout-btn" onClick={handleLogout} title="Выйти">
+          <button className="logout-btn" onClick={handleLogout} title={t('common.logout')}>
             <IconLogout />
           </button>
         </div>

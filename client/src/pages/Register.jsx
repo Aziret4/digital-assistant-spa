@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useI18n } from '../context/I18nContext';
 
 export default function Register() {
   const { register } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
 
   const [name, setName] = useState('');
@@ -17,7 +19,7 @@ export default function Register() {
     setError('');
 
     if (password.length < 6) {
-      setError('Пароль должен быть не короче 6 символов');
+      setError(t('auth.register.passwordShort'));
       return;
     }
 
@@ -26,7 +28,7 @@ export default function Register() {
       await register(name, email, password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.message || 'Ошибка регистрации');
+      setError(err.response?.data?.message || t('auth.register.error'));
     } finally {
       setLoading(false);
     }
@@ -38,13 +40,13 @@ export default function Register() {
         <div className="auth-brand">
           <div className="brand-logo">ЦП</div>
           <div>
-            <h1>Регистрация</h1>
-            <p className="muted">Создание аккаунта владельца</p>
+            <h1>{t('auth.register.title')}</h1>
+            <p className="muted">{t('auth.register.subtitle')}</p>
           </div>
         </div>
 
         <label>
-          ФИО
+          {t('auth.register.name')}
           <input
             type="text"
             value={name}
@@ -55,7 +57,7 @@ export default function Register() {
         </label>
 
         <label>
-          Email
+          {t('auth.login.email')}
           <input
             type="email"
             value={email}
@@ -65,7 +67,7 @@ export default function Register() {
         </label>
 
         <label>
-          Пароль
+          {t('auth.login.password')}
           <input
             type="password"
             value={password}
@@ -78,11 +80,11 @@ export default function Register() {
         {error && <div className="error">{error}</div>}
 
         <button type="submit" disabled={loading} className="full-width">
-          {loading ? 'Создание...' : 'Зарегистрироваться'}
+          {loading ? t('auth.register.submitting') : t('auth.register.submit')}
         </button>
 
         <div className="auth-switch">
-          Уже есть аккаунт? <Link to="/login">Войти</Link>
+          {t('auth.register.haveAccount')} <Link to="/login">{t('auth.register.login')}</Link>
         </div>
       </form>
     </div>
