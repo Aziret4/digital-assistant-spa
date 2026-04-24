@@ -1,4 +1,5 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   IconHome,
@@ -7,7 +8,10 @@ import {
   IconBag,
   IconChat,
   IconLogout,
+  IconMenu,
+  IconX,
 } from './Icons';
+import { useEffect } from 'react';
 
 function getInitials(name) {
   if (!name) return '?';
@@ -20,6 +24,13 @@ function getInitials(name) {
 export default function Layout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
 
   function handleLogout() {
     logout();
@@ -28,13 +39,38 @@ export default function Layout() {
 
   return (
     <div className="app">
-      <aside className="sidebar">
+      <div className="mobile-topbar">
+        <button
+          className="icon-btn"
+          onClick={() => setSidebarOpen(true)}
+          aria-label="Открыть меню"
+        >
+          <IconMenu width={22} height={22} />
+        </button>
+        <div className="mobile-brand">Цифровой помощник</div>
+      </div>
+
+      {sidebarOpen && (
+        <div
+          className="sidebar-backdrop"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
         <div className="sidebar-brand">
           <div className="brand-logo">ЦП</div>
           <div className="brand-text">
             <div className="brand-title">Цифровой помощник</div>
             <div className="brand-subtitle">Ателье</div>
           </div>
+          <button
+            className="icon-btn sidebar-close"
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Закрыть меню"
+          >
+            <IconX width={18} height={18} />
+          </button>
         </div>
 
         <nav className="sidebar-nav">
