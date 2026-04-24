@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import {
   IconHome,
   IconUsers,
@@ -10,8 +11,9 @@ import {
   IconLogout,
   IconMenu,
   IconX,
+  IconSun,
+  IconMoon,
 } from './Icons';
-import { useEffect } from 'react';
 
 function getInitials(name) {
   if (!name) return '?';
@@ -23,6 +25,7 @@ function getInitials(name) {
 
 export default function Layout() {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -48,6 +51,14 @@ export default function Layout() {
           <IconMenu width={22} height={22} />
         </button>
         <div className="mobile-brand">Цифровой помощник</div>
+        <button
+          className="icon-btn"
+          onClick={toggleTheme}
+          aria-label="Переключить тему"
+          style={{ marginLeft: 'auto' }}
+        >
+          {theme === 'light' ? <IconMoon width={18} height={18} /> : <IconSun width={18} height={18} />}
+        </button>
       </div>
 
       {sidebarOpen && (
@@ -90,6 +101,18 @@ export default function Layout() {
             <IconChat /> <span>Помощник</span>
           </NavLink>
         </nav>
+
+        <button className="theme-toggle" onClick={toggleTheme}>
+          {theme === 'light' ? (
+            <>
+              <IconMoon width={16} height={16} /> <span>Тёмная тема</span>
+            </>
+          ) : (
+            <>
+              <IconSun width={16} height={16} /> <span>Светлая тема</span>
+            </>
+          )}
+        </button>
 
         <div className="sidebar-user">
           <div className="avatar">{getInitials(user?.name)}</div>
