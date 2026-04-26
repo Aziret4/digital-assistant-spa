@@ -10,7 +10,9 @@ import {
   IconCheck,
   IconX,
   IconBag,
+  IconDownload,
 } from '../components/Icons';
+import { exportToCsv } from '../utils/exportCsv';
 
 const STATUSES = ['принят', 'в работе', 'готов', 'выдан', 'отменен'];
 
@@ -169,14 +171,41 @@ export default function Orders() {
     }
   }
 
+  function handleExport() {
+    const headers = [
+      { key: 'client_name', label: t('requests.client') },
+      { key: 'service_name', label: t('orders.service') },
+      { key: 'amount', label: t('orders.amount') },
+      { key: 'deadline', label: t('orders.deadline') },
+      { key: 'status', label: t('orders.status') },
+      { key: 'comment', label: t('orders.comment') },
+      { key: 'created_at', label: t('orders.createdAt') },
+    ];
+    const rows = filteredOrders.map((o) => ({
+      ...o,
+      status: t(`orderStatus.${o.status}`),
+      deadline: formatDate(o.deadline),
+      created_at: formatDate(o.created_at),
+    }));
+    exportToCsv(`orders-${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
+    toast.success(t('common.exported'));
+  }
+
   return (
     <div className="page">
       <div className="page-header">
         <h1>{t('orders.title')}</h1>
         {!showForm && (
-          <button onClick={startAdd}>
-            <IconPlus /> {t('orders.add').replace('+ ', '')}
-          </button>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {orders.length > 0 && (
+              <button className="secondary" onClick={handleExport}>
+                <IconDownload width={16} height={16} /> {t('common.export')}
+              </button>
+            )}
+            <button onClick={startAdd}>
+              <IconPlus /> {t('orders.add').replace('+ ', '')}
+            </button>
+          </div>
         )}
       </div>
 

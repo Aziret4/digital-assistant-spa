@@ -11,7 +11,9 @@ import {
   IconX,
   IconArrowRight,
   IconClipboard,
+  IconDownload,
 } from '../components/Icons';
+import { exportToCsv } from '../utils/exportCsv';
 
 const STATUSES = [
   'новая',
@@ -224,14 +226,39 @@ export default function Requests() {
     return status !== 'переведена в заказ' && status !== 'отклонена';
   }
 
+  function handleExport() {
+    const headers = [
+      { key: 'client_name', label: t('requests.client') },
+      { key: 'title', label: t('requests.name') },
+      { key: 'description', label: t('requests.description') },
+      { key: 'service_type', label: t('requests.serviceType') },
+      { key: 'status', label: t('requests.status') },
+      { key: 'created_at', label: t('requests.date') },
+    ];
+    const rows = filteredRequests.map((r) => ({
+      ...r,
+      status: t(`requestStatus.${r.status}`),
+      created_at: formatDate(r.created_at),
+    }));
+    exportToCsv(`requests-${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
+    toast.success(t('common.exported'));
+  }
+
   return (
     <div className="page">
       <div className="page-header">
         <h1>{t('requests.title')}</h1>
         {!showForm && !convertId && (
-          <button onClick={startAdd}>
-            <IconPlus /> {t('requests.add').replace('+ ', '')}
-          </button>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {requests.length > 0 && (
+              <button className="secondary" onClick={handleExport}>
+                <IconDownload width={16} height={16} /> {t('common.export')}
+              </button>
+            )}
+            <button onClick={startAdd}>
+              <IconPlus /> {t('requests.add').replace('+ ', '')}
+            </button>
+          </div>
         )}
       </div>
 

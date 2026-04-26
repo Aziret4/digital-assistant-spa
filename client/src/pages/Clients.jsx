@@ -3,7 +3,8 @@ import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
 import { useI18n } from '../context/I18nContext';
 import EmptyState from '../components/EmptyState';
-import { IconPlus, IconEdit, IconTrash, IconCheck, IconX, IconUsers } from '../components/Icons';
+import { IconPlus, IconEdit, IconTrash, IconCheck, IconX, IconUsers, IconDownload } from '../components/Icons';
+import { exportToCsv } from '../utils/exportCsv';
 
 const EMPTY_FORM = {
   full_name: '',
@@ -128,14 +129,33 @@ export default function Clients() {
     return item ? item.label : value;
   }
 
+  function handleExport() {
+    const headers = [
+      { key: 'full_name', label: t('clients.fullName') },
+      { key: 'phone', label: t('clients.phone') },
+      { key: 'email', label: t('clients.email') },
+      { key: 'source', label: t('clients.source') },
+      { key: 'notes', label: t('clients.notes') },
+    ];
+    exportToCsv(`clients-${new Date().toISOString().slice(0, 10)}.csv`, headers, filteredClients);
+    toast.success(t('common.exported'));
+  }
+
   return (
     <div className="page">
       <div className="page-header">
         <h1>{t('clients.title')}</h1>
         {!showForm && (
-          <button onClick={startAdd}>
-            <IconPlus /> {t('clients.add').replace('+ ', '')}
-          </button>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {clients.length > 0 && (
+              <button className="secondary" onClick={handleExport}>
+                <IconDownload width={16} height={16} /> {t('common.export')}
+              </button>
+            )}
+            <button onClick={startAdd}>
+              <IconPlus /> {t('clients.add').replace('+ ', '')}
+            </button>
+          </div>
         )}
       </div>
 

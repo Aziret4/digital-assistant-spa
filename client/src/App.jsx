@@ -6,6 +6,7 @@ import Clients from './pages/Clients';
 import Requests from './pages/Requests';
 import Orders from './pages/Orders';
 import Assistant from './pages/Assistant';
+import Settings from './pages/Settings';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -27,6 +28,7 @@ export default function App() {
         <Route path="/requests" element={<Requests />} />
         <Route path="/orders" element={<Orders />} />
         <Route path="/assistant" element={<Assistant />} />
+        <Route path="/settings" element={<Settings />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

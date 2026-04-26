@@ -5,11 +5,14 @@ import {
   Cell,
   BarChart,
   Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer,
   Legend,
+  CartesianGrid,
 } from 'recharts';
 import api from '../api/axios';
 import { useI18n } from '../context/I18nContext';
@@ -58,6 +61,35 @@ function sumByOrderStatus(orders, translate) {
   }));
 }
 
+function revenueByMonth(orders) {
+  const map = {};
+  for (const o of orders) {
+    if (!o.created_at) continue;
+    const d = new Date(o.created_at);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    map[key] = (map[key] || 0) + Number(o.amount || 0);
+  }
+  const sortedKeys = Object.keys(map).sort();
+  return sortedKeys.map((key) => ({
+    month: key,
+    revenue: Math.round(map[key]),
+  }));
+}
+
+function topClients(orders) {
+  const map = {};
+  for (const o of orders) {
+    const name = o.client_name || '—';
+    if (!map[name]) map[name] = { name, total: 0, count: 0 };
+    map[name].total += Number(o.amount || 0);
+    map[name].count += 1;
+  }
+  return Object.values(map)
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 5)
+    .map((c) => ({ ...c, total: Math.round(c.total) }));
+}
+
 export default function Dashboard() {
   const { t } = useI18n();
 
@@ -67,10 +99,13 @@ export default function Dashboard() {
     requestsActive: 0,
     ordersTotal: 0,
     ordersInWork: 0,
+    totalRevenue: 0,
   });
   const [requestsChart, setRequestsChart] = useState([]);
   const [ordersChart, setOrdersChart] = useState([]);
   const [amountChart, setAmountChart] = useState([]);
+  const [revenueChart, setRevenueChart] = useState([]);
+  const [topClientsChart, setTopClientsChart] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -86,6 +121,10 @@ export default function Dashboard() {
         const requests = requestsRes.data;
         const orders = ordersRes.data;
 
+        const totalRevenue = orders
+          .filter((o) => o.status === 'выдан')
+          .reduce((sum, o) => sum + Number(o.amount || 0), 0);
+
         setStats({
           clients: clientsRes.data.length,
           requestsTotal: requests.length,
@@ -94,11 +133,14 @@ export default function Dashboard() {
           ).length,
           ordersTotal: orders.length,
           ordersInWork: orders.filter((o) => o.status === 'в работе').length,
+          totalRevenue: Math.round(totalRevenue),
         });
 
         setRequestsChart(countByStatus(requests, REQUEST_STATUS_COLORS, (s) => t(`requestStatus.${s}`)));
         setOrdersChart(countByStatus(orders, ORDER_STATUS_COLORS, (s) => t(`orderStatus.${s}`)));
         setAmountChart(sumByOrderStatus(orders, (s) => t(`orderStatus.${s}`)));
+        setRevenueChart(revenueByMonth(orders));
+        setTopClientsChart(topClients(orders));
       } catch (err) {
         setError(err.response?.data?.message || t('dashboard.error'));
       } finally {
@@ -115,6 +157,8 @@ export default function Dashboard() {
 
   const hasRequests = requestsChart.length > 0;
   const hasOrders = ordersChart.length > 0;
+  const hasRevenue = revenueChart.length > 0;
+  const hasTopClients = topClientsChart.length > 0;
 
   return (
     <div className="page">
@@ -138,6 +182,12 @@ export default function Dashboard() {
           <div className="stat-label">{t('dashboard.orders')}</div>
           <div className="stat-value">{stats.ordersTotal}</div>
           <div className="stat-sub">{t('dashboard.inWork')}: {stats.ordersInWork}</div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-label">{t('dashboard.totalRevenue')}</div>
+          <div className="stat-value">{stats.totalRevenue.toLocaleString('ru-RU')}</div>
+          <div className="stat-sub">сом</div>
         </div>
       </div>
 
@@ -198,23 +248,71 @@ export default function Dashboard() {
       </div>
 
       <div className="chart-card wide">
-        <h2>{t('dashboard.chart.amountByStatus')}</h2>
-        {hasOrders ? (
+        <h2>{t('dashboard.chart.revenue')}</h2>
+        {hasRevenue ? (
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={amountChart} margin={{ top: 16, right: 16, left: 0, bottom: 0 }}>
-              <XAxis dataKey="name" stroke="#737373" fontSize={12} />
+            <LineChart data={revenueChart} margin={{ top: 16, right: 16, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
+              <XAxis dataKey="month" stroke="#737373" fontSize={12} />
               <YAxis stroke="#737373" fontSize={12} />
               <Tooltip formatter={(value) => `${Number(value).toLocaleString('ru-RU')}`} />
-              <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-                {amountChart.map((entry, i) => (
-                  <Cell key={i} fill={entry.color} />
-                ))}
-              </Bar>
-            </BarChart>
+              <Line
+                type="monotone"
+                dataKey="revenue"
+                stroke="#4f46e5"
+                strokeWidth={2}
+                dot={{ r: 4, fill: '#4f46e5' }}
+                activeDot={{ r: 6 }}
+              />
+            </LineChart>
           </ResponsiveContainer>
         ) : (
           <p className="muted">{t('common.noData')}</p>
         )}
+      </div>
+
+      <div className="charts-grid">
+        <div className="chart-card">
+          <h2>{t('dashboard.chart.amountByStatus')}</h2>
+          {hasOrders ? (
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={amountChart} margin={{ top: 16, right: 16, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
+                <XAxis dataKey="name" stroke="#737373" fontSize={12} />
+                <YAxis stroke="#737373" fontSize={12} />
+                <Tooltip formatter={(value) => `${Number(value).toLocaleString('ru-RU')}`} />
+                <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                  {amountChart.map((entry, i) => (
+                    <Cell key={i} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="muted">{t('common.noData')}</p>
+          )}
+        </div>
+
+        <div className="chart-card">
+          <h2>{t('dashboard.chart.topClients')}</h2>
+          {hasTopClients ? (
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart
+                data={topClientsChart}
+                layout="vertical"
+                margin={{ top: 16, right: 16, left: 0, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
+                <XAxis type="number" stroke="#737373" fontSize={12} />
+                <YAxis dataKey="name" type="category" stroke="#737373" fontSize={12} width={100} />
+                <Tooltip formatter={(value) => `${Number(value).toLocaleString('ru-RU')}`} />
+                <Bar dataKey="total" radius={[0, 6, 6, 0]} fill="#4f46e5" />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="muted">{t('common.noData')}</p>
+          )}
+        </div>
       </div>
     </div>
   );
