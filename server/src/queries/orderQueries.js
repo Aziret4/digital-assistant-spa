@@ -1,63 +1,65 @@
 const pool = require('../config/db');
 
-async function getAllOrders() {
+async function getAllOrders(userId) {
   const result = await pool.query(
     `SELECT o.*, c.full_name AS client_name
      FROM orders o
      LEFT JOIN clients c ON c.id = o.client_id
-     ORDER BY o.created_at DESC`
+     WHERE o.user_id = $1
+     ORDER BY o.created_at DESC`,
+    [userId]
   );
   return result.rows;
 }
 
-async function getOrderById(id) {
+async function getOrderById(id, userId) {
   const result = await pool.query(
     `SELECT o.*, c.full_name AS client_name
      FROM orders o
      LEFT JOIN clients c ON c.id = o.client_id
-     WHERE o.id = $1`,
-    [id]
+     WHERE o.id = $1 AND o.user_id = $2`,
+    [id, userId]
   );
   return result.rows[0];
 }
 
-async function createOrder({ client_id, request_id, service_name, amount, deadline, status, comment }) {
+async function createOrder({ user_id, client_id, request_id, service_name, amount, deadline, status, comment }) {
   const result = await pool.query(
-    `INSERT INTO orders (client_id, request_id, service_name, amount, deadline, status, comment)
-     VALUES ($1, $2, $3, $4, $5, COALESCE($6, 'принят'), $7)
+    `INSERT INTO orders (user_id, client_id, request_id, service_name, amount, deadline, status, comment)
+     VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7, 'принят'), $8)
      RETURNING *`,
-    [client_id, request_id || null, service_name, amount || 0, deadline || null, status, comment || null]
+    [user_id, client_id, request_id || null, service_name, amount || 0, deadline || null, status, comment || null]
   );
   return result.rows[0];
 }
 
-async function updateOrder(id, { service_name, amount, deadline, status, comment }) {
+async function updateOrder(id, userId, { service_name, amount, deadline, status, comment }) {
   const result = await pool.query(
     `UPDATE orders
      SET service_name = $1, amount = $2, deadline = $3, status = $4, comment = $5
-     WHERE id = $6
+     WHERE id = $6 AND user_id = $7
      RETURNING *`,
-    [service_name, amount, deadline, status, comment, id]
+    [service_name, amount, deadline, status, comment, id, userId]
   );
   return result.rows[0];
 }
 
-async function deleteOrder(id) {
+async function deleteOrder(id, userId) {
   const result = await pool.query(
-    'DELETE FROM orders WHERE id = $1 RETURNING id',
-    [id]
+    'DELETE FROM orders WHERE id = $1 AND user_id = $2 RETURNING id',
+    [id, userId]
   );
   return result.rows[0];
 }
 
-async function convertRequestToOrder(requestId, { service_name, amount, deadline, comment }) {
+async function convertRequestToOrder(requestId, userId, { service_name, amount, deadline, comment }) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
     const requestResult = await client.query(
-      'SELECT * FROM requests WHERE id = $1',
-      [requestId]
+      'SELECT * FROM requests WHERE id = $1 AND user_id = $2',
+      [requestId, userId]
     );
     const request = requestResult.rows[0];
 
@@ -67,10 +69,11 @@ async function convertRequestToOrder(requestId, { service_name, amount, deadline
     }
 
     const orderResult = await client.query(
-      `INSERT INTO orders (client_id, request_id, service_name, amount, deadline, comment, status)
-       VALUES ($1, $2, $3, $4, $5, $6, 'принят')
+      `INSERT INTO orders (user_id, client_id, request_id, service_name, amount, deadline, comment, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'принят')
        RETURNING *`,
       [
+        userId,
         request.client_id,
         request.id,
         service_name || request.service_type || request.title,
@@ -81,8 +84,8 @@ async function convertRequestToOrder(requestId, { service_name, amount, deadline
     );
 
     await client.query(
-      `UPDATE requests SET status = 'переведена в заказ' WHERE id = $1`,
-      [requestId]
+      `UPDATE requests SET status = 'переведена в заказ' WHERE id = $1 AND user_id = $2`,
+      [requestId, userId]
     );
 
     await client.query('COMMIT');

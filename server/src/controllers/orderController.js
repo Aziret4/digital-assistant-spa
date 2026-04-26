@@ -5,12 +5,13 @@ const {
   updateOrder,
   deleteOrder,
 } = require('../queries/orderQueries');
+const { getClientById } = require('../queries/clientQueries');
 
 const ALLOWED_STATUSES = ['принят', 'в работе', 'готов', 'выдан', 'отменен'];
 
 async function listOrders(req, res) {
   try {
-    const orders = await getAllOrders();
+    const orders = await getAllOrders(req.user.id);
     res.json(orders);
   } catch (err) {
     console.error('listOrders error:', err);
@@ -20,7 +21,7 @@ async function listOrders(req, res) {
 
 async function getOrder(req, res) {
   try {
-    const order = await getOrderById(req.params.id);
+    const order = await getOrderById(req.params.id, req.user.id);
     if (!order) {
       return res.status(404).json({ message: 'Заказ не найден' });
     }
@@ -43,7 +44,13 @@ async function addOrder(req, res) {
       return res.status(400).json({ message: 'Недопустимый статус заказа' });
     }
 
+    const client = await getClientById(client_id, req.user.id);
+    if (!client) {
+      return res.status(400).json({ message: 'Клиент не найден или принадлежит другому пользователю' });
+    }
+
     const order = await createOrder({
+      user_id: req.user.id,
       client_id,
       request_id,
       service_name,
@@ -71,12 +78,12 @@ async function editOrder(req, res) {
       return res.status(400).json({ message: 'Недопустимый статус заказа' });
     }
 
-    const existing = await getOrderById(req.params.id);
+    const existing = await getOrderById(req.params.id, req.user.id);
     if (!existing) {
       return res.status(404).json({ message: 'Заказ не найден' });
     }
 
-    const order = await updateOrder(req.params.id, {
+    const order = await updateOrder(req.params.id, req.user.id, {
       service_name,
       amount: amount ?? existing.amount,
       deadline: deadline ?? existing.deadline,
@@ -92,7 +99,7 @@ async function editOrder(req, res) {
 
 async function removeOrder(req, res) {
   try {
-    const deleted = await deleteOrder(req.params.id);
+    const deleted = await deleteOrder(req.params.id, req.user.id);
     if (!deleted) {
       return res.status(404).json({ message: 'Заказ не найден' });
     }

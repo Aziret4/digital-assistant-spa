@@ -8,7 +8,7 @@ const {
 
 async function listClients(req, res) {
   try {
-    const clients = await getAllClients();
+    const clients = await getAllClients(req.user.id);
     res.json(clients);
   } catch (err) {
     console.error('listClients error:', err);
@@ -18,7 +18,7 @@ async function listClients(req, res) {
 
 async function getClient(req, res) {
   try {
-    const client = await getClientById(req.params.id);
+    const client = await getClientById(req.params.id, req.user.id);
     if (!client) {
       return res.status(404).json({ message: 'Клиент не найден' });
     }
@@ -37,7 +37,14 @@ async function addClient(req, res) {
       return res.status(400).json({ message: 'Имя клиента обязательно' });
     }
 
-    const client = await createClient({ full_name, phone, email, source, notes });
+    const client = await createClient({
+      user_id: req.user.id,
+      full_name,
+      phone,
+      email,
+      source,
+      notes,
+    });
     res.status(201).json(client);
   } catch (err) {
     console.error('addClient error:', err);
@@ -53,12 +60,12 @@ async function editClient(req, res) {
       return res.status(400).json({ message: 'Имя клиента обязательно' });
     }
 
-    const existing = await getClientById(req.params.id);
+    const existing = await getClientById(req.params.id, req.user.id);
     if (!existing) {
       return res.status(404).json({ message: 'Клиент не найден' });
     }
 
-    const client = await updateClient(req.params.id, {
+    const client = await updateClient(req.params.id, req.user.id, {
       full_name,
       phone,
       email,
@@ -74,7 +81,7 @@ async function editClient(req, res) {
 
 async function removeClient(req, res) {
   try {
-    const deleted = await deleteClient(req.params.id);
+    const deleted = await deleteClient(req.params.id, req.user.id);
     if (!deleted) {
       return res.status(404).json({ message: 'Клиент не найден' });
     }

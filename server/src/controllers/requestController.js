@@ -5,6 +5,7 @@ const {
   updateRequest,
   deleteRequest,
 } = require('../queries/requestQueries');
+const { getClientById } = require('../queries/clientQueries');
 const { convertRequestToOrder } = require('../queries/orderQueries');
 
 const ALLOWED_STATUSES = [
@@ -17,7 +18,7 @@ const ALLOWED_STATUSES = [
 
 async function listRequests(req, res) {
   try {
-    const requests = await getAllRequests();
+    const requests = await getAllRequests(req.user.id);
     res.json(requests);
   } catch (err) {
     console.error('listRequests error:', err);
@@ -27,7 +28,7 @@ async function listRequests(req, res) {
 
 async function getRequest(req, res) {
   try {
-    const request = await getRequestById(req.params.id);
+    const request = await getRequestById(req.params.id, req.user.id);
     if (!request) {
       return res.status(404).json({ message: 'Заявка не найдена' });
     }
@@ -50,7 +51,19 @@ async function addRequest(req, res) {
       return res.status(400).json({ message: 'Недопустимый статус заявки' });
     }
 
-    const request = await createRequest({ client_id, title, description, service_type, status });
+    const client = await getClientById(client_id, req.user.id);
+    if (!client) {
+      return res.status(400).json({ message: 'Клиент не найден или принадлежит другому пользователю' });
+    }
+
+    const request = await createRequest({
+      user_id: req.user.id,
+      client_id,
+      title,
+      description,
+      service_type,
+      status,
+    });
     res.status(201).json(request);
   } catch (err) {
     console.error('addRequest error:', err);
@@ -70,12 +83,12 @@ async function editRequest(req, res) {
       return res.status(400).json({ message: 'Недопустимый статус заявки' });
     }
 
-    const existing = await getRequestById(req.params.id);
+    const existing = await getRequestById(req.params.id, req.user.id);
     if (!existing) {
       return res.status(404).json({ message: 'Заявка не найдена' });
     }
 
-    const request = await updateRequest(req.params.id, {
+    const request = await updateRequest(req.params.id, req.user.id, {
       title,
       description,
       service_type,
@@ -90,7 +103,7 @@ async function editRequest(req, res) {
 
 async function removeRequest(req, res) {
   try {
-    const deleted = await deleteRequest(req.params.id);
+    const deleted = await deleteRequest(req.params.id, req.user.id);
     if (!deleted) {
       return res.status(404).json({ message: 'Заявка не найдена' });
     }
@@ -105,7 +118,7 @@ async function convertRequest(req, res) {
   try {
     const { service_name, amount, deadline, comment } = req.body;
 
-    const result = await convertRequestToOrder(req.params.id, {
+    const result = await convertRequestToOrder(req.params.id, req.user.id, {
       service_name,
       amount,
       deadline,

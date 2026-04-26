@@ -13,9 +13,10 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Таблица клиентов ателье
+-- Таблица клиентов ателье (привязана к пользователю-владельцу)
 CREATE TABLE IF NOT EXISTS clients (
   id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   full_name VARCHAR(150) NOT NULL,
   phone VARCHAR(30),
   email VARCHAR(100),
@@ -24,9 +25,10 @@ CREATE TABLE IF NOT EXISTS clients (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Таблица заявок от клиентов
+-- Таблица заявок от клиентов (привязана к пользователю-владельцу)
 CREATE TABLE IF NOT EXISTS requests (
   id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
   title VARCHAR(200) NOT NULL,
   description TEXT,
@@ -36,9 +38,10 @@ CREATE TABLE IF NOT EXISTS requests (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Таблица заказов (из подтверждённых заявок)
+-- Таблица заказов (привязана к пользователю-владельцу)
 CREATE TABLE IF NOT EXISTS orders (
   id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
   request_id INTEGER REFERENCES requests(id) ON DELETE SET NULL,
   service_name VARCHAR(150) NOT NULL,
@@ -49,3 +52,8 @@ CREATE TABLE IF NOT EXISTS orders (
   comment TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Индексы для ускорения запросов с фильтром по пользователю
+CREATE INDEX IF NOT EXISTS idx_clients_user_id ON clients(user_id);
+CREATE INDEX IF NOT EXISTS idx_requests_user_id ON requests(user_id);
+CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
