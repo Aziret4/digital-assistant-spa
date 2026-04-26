@@ -6,6 +6,7 @@ export default {
   'nav.clients': 'Кардарлар',
   'nav.requests': 'Өтүнүчтөр',
   'nav.orders': 'Буйрутмалар',
+  'nav.calendar': 'Календарь',
   'nav.assistant': 'Жардамчы',
   'nav.settings': 'Жөндөөлөр',
 
@@ -196,4 +197,7 @@ export default {
   'assistant.copied': 'Жооп буферге көчүрүлдү',
   'assistant.copyError': 'Көчүрүү мүмкүн болбоду',
   'assistant.error': 'Жоопту алууда ката',
+
+  'calendar.title': 'Буйрутмалардын календары',
+  'calendar.today': 'Бүгүн',
 };

@@ -6,6 +6,7 @@ export default {
   'nav.clients': 'Clients',
   'nav.requests': 'Requests',
   'nav.orders': 'Orders',
+  'nav.calendar': 'Calendar',
   'nav.assistant': 'Assistant',
   'nav.settings': 'Settings',
 
@@ -196,4 +197,7 @@ export default {
   'assistant.copied': 'Answer copied to clipboard',
   'assistant.copyError': 'Failed to copy',
   'assistant.error': 'Error getting answer',
+
+  'calendar.title': 'Orders calendar',
+  'calendar.today': 'Today',
 };

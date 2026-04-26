@@ -15,6 +15,7 @@ import {
   IconSun,
   IconMoon,
   IconSettings,
+  IconCalendar,
 } from './Icons';
 
 function getInitials(name) {
@@ -99,6 +100,9 @@ export default function Layout() {
           </NavLink>
           <NavLink to="/orders">
             <IconBag /> <span>{t('nav.orders')}</span>
+          </NavLink>
+          <NavLink to="/calendar">
+            <IconCalendar /> <span>{t('nav.calendar')}</span>
           </NavLink>
           <NavLink to="/assistant">
             <IconChat /> <span>{t('nav.assistant')}</span>

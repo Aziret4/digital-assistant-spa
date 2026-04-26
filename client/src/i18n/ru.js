@@ -6,6 +6,7 @@ export default {
   'nav.clients': 'Клиенты',
   'nav.requests': 'Заявки',
   'nav.orders': 'Заказы',
+  'nav.calendar': 'Календарь',
   'nav.assistant': 'Помощник',
   'nav.settings': 'Настройки',
 
@@ -196,4 +197,7 @@ export default {
   'assistant.copied': 'Ответ скопирован в буфер обмена',
   'assistant.copyError': 'Не удалось скопировать',
   'assistant.error': 'Ошибка при получении ответа',
+
+  'calendar.title': 'Календарь заказов',
+  'calendar.today': 'Сегодня',
 };
